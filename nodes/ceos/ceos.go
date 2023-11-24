@@ -253,6 +253,8 @@ func (n *ceos) ceosPostDeploy(_ context.Context) error {
 	defer d.Close()
 
 	cfgs := []string{
+		// In order to ensure janoger user, we need to add janoger user here.
+		"username janoger privilege 15 secret netcon!",
 		"interface " + nodeCfg.MgmtIntf,
 		"no ip address",
 		"no ipv6 address",
