@@ -108,7 +108,7 @@ var (
 		"net.ipv6.conf.all.autoconf":       "0",
 		"net.ipv6.conf.default.autoconf":   "0",
 	}
-	defaultCredentials = nodes.NewCredentials("admin", "NokiaSrl1!")
+	defaultCredentials = nodes.NewCredentials("admin", "netcon!")
 
 	srlTypes = map[string]string{
 		"ixrd1":    "7220IXRD1.yml",
@@ -323,12 +323,19 @@ func (s *srl) PostDeploy(ctx context.Context, params *nodes.PostDeployParams) er
 		return err
 	}
 
-	// return if config file is found in the lab directory.
-	// This can be either if the startup-config has been mounted by that path
-	// or the config has been previously generated and saved
-	if utils.FileExists(filepath.Join(s.Cfg.LabDir, "config", "config.json")) {
-		return nil
+	password := defaultCredentials.GetPassword()
+
+	cliUserCfg := []string{
+		"set / system aaa authentication admin-user password " + password,
+		"set / system aaa authentication linuxadmin-user password " + password,
 	}
+
+	overrideStartupCliCfg := bytes.NewBuffer(nil)
+	overrideStartupCliCfg.WriteString(strings.Join(cliUserCfg, "\n"))
+	overrideStartupCliCfg.WriteByte('\n')
+	overrideStartupCliCfg.Write(s.startupCliCfg)
+
+	s.startupCliCfg = overrideStartupCliCfg.Bytes()
 
 	if err := s.addDefaultConfig(ctx); err != nil {
 		return err
