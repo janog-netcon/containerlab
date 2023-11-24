@@ -5,6 +5,7 @@
 package xrd
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/srl-labs/containerlab/netconf"
@@ -22,7 +24,7 @@ import (
 
 var (
 	kindnames          = []string{"xrd", "cisco_xrd"}
-	defaultCredentials = nodes.NewCredentials("clab", "clab@123")
+	defaultCredentials = nodes.NewCredentials("janoger", "netcon!")
 	xrdEnv             = map[string]string{
 		"XR_FIRST_BOOT_CONFIG": "/etc/xrd/first-boot.cfg",
 		"XR_MGMT_INTERFACES":   "linux:eth0,xr_name=Mg0/RP0/CPU0/0,chksum,snoop_v4,snoop_v6",
@@ -34,6 +36,11 @@ var (
 
 const (
 	scrapliPlatformName = "cisco_iosxr"
+
+	userConfigBase = `username {{ .Username }}
+ group root-lr
+ group cisco-support
+ secret {{ .Password }}`
 )
 
 // Register registers the node in the NodeRegistry.
@@ -107,16 +114,35 @@ func (n *xrd) createXRDFiles(_ context.Context) error {
 	nodeCfg.MgmtIPv4Gateway = n.Runtime.Mgmt().IPv4Gw
 	nodeCfg.MgmtIPv6Gateway = n.Runtime.Mgmt().IPv6Gw
 
+	startupConfig := cfgTemplate
 	// use startup config file provided by a user
 	if nodeCfg.StartupConfig != "" {
 		c, err := os.ReadFile(nodeCfg.StartupConfig)
 		if err != nil {
 			return err
 		}
-		cfgTemplate = string(c)
+		startupConfig = string(c)
 	}
 
-	err := n.GenerateConfig(nodeCfg.ResStartupConfig, cfgTemplate)
+	// Adding user config to meet defaultCredentials
+	userConfigTemplate, err := template.New("userConfigTemplate").Parse(userConfigBase)
+	if err != nil {
+		return err
+	}
+
+	userConfig := bytes.NewBuffer(nil)
+	err = userConfigTemplate.Execute(userConfig, map[string]string{
+		"Username": defaultCredentials.GetUsername(),
+		"Password": defaultCredentials.GetPassword(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// prepend user config to startup config
+	startupConfig = strings.Join([]string{userConfig.String(), startupConfig}, "\n")
+
+	err = n.GenerateConfig(nodeCfg.ResStartupConfig, startupConfig)
 	if err != nil {
 		return err
 	}
