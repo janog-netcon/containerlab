@@ -66,5 +66,11 @@ func (s *sonic) PostDeploy(ctx context.Context, _ *nodes.PostDeployParams) error
 		return fmt.Errorf("failed post-deploy node %q: %w", s.Cfg.ShortName, err)
 	}
 
+	cmd, _ = exec.NewExecCmdFromString("service ssh start")
+	err = s.RunExecNotWait(ctx, cmd)
+	if err != nil {
+		return fmt.Errorf("failed post-deploy node %q: %w", s.Cfg.ShortName, err)
+	}
+
 	return nil
 }

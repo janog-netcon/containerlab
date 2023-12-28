@@ -69,6 +69,10 @@ set / system snmp community public
 set / system snmp network-instance mgmt
 set / system snmp network-instance mgmt admin-state enable
 set / system lldp admin-state enable
+set / system configuration role network-admin rule / action write
+set / system aaa authorization role network-admin services [ cli ]
+set / system aaa authentication user janoger password netcon!
+set / system aaa authentication user janoger role [ network-admin ]
 set / system aaa authentication idle-timeout 7200
 {{- /* if e.g. node is run with none mgmt networking but a macvlan interface is attached as mgmt0, we need to adjust the mtu */}}
 {{- if ne .MgmtMTU 0 }}
