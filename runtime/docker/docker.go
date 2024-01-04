@@ -721,6 +721,7 @@ func (d *DockerRuntime) produceGenericContainerList(ctx context.Context, inputCo
 		if err != nil {
 			// Container may be deleted before getting pid.
 			// We can consider that container has already deleted.
+			log.Warnf("failed to get container pid, skipping producing generic container: %v", err)
 			continue
 		}
 
