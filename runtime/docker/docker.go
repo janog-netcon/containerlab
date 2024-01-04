@@ -640,7 +640,7 @@ func (d *DockerRuntime) ListContainers(ctx context.Context, gfilters []*types.Ge
 		nr = append(nr, bridgenet...)
 	}
 
-	return d.produceGenericContainerList(ctx, ctrs, nr)
+	return d.produceGenericContainerList(ctx, ctrs, nr), nil
 }
 
 func (d *DockerRuntime) GetContainer(ctx context.Context, cID string) (*runtime.GenericContainer, error) {
@@ -683,7 +683,7 @@ func (*DockerRuntime) buildFilterString(gFilters []*types.GenericFilter) filters
 // Transform docker-specific to generic container format.
 func (d *DockerRuntime) produceGenericContainerList(ctx context.Context, inputContainers []dockerTypes.Container,
 	inputNetworkResources []dockerTypes.NetworkResource,
-) ([]runtime.GenericContainer, error) {
+) []runtime.GenericContainer {
 	var result []runtime.GenericContainer
 
 	for idx := range inputContainers {
@@ -719,7 +719,9 @@ func (d *DockerRuntime) produceGenericContainerList(ctx context.Context, inputCo
 		var err error
 		ctr.Pid, err = d.containerPid(ctx, i.ID)
 		if err != nil {
-			return nil, err
+			// Container may be deleted before getting pid.
+			// We can consider that container has already deleted.
+			continue
 		}
 
 		// if bridgeName is empty, try to find a network created by clab that the container is connected to
@@ -771,7 +773,7 @@ func (d *DockerRuntime) produceGenericContainerList(ctx context.Context, inputCo
 		result = append(result, ctr)
 	}
 
-	return result, nil
+	return result
 }
 
 func genericPortFromDockerPort(p dockerTypes.Port) *types.GenericPortBinding {
