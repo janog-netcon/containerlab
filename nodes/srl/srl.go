@@ -22,7 +22,6 @@ import (
 	"github.com/hairyhenderson/gomplate/v3/data"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh"
 
 	"github.com/srl-labs/containerlab/cert"
 	"github.com/srl-labs/containerlab/clab/exec"
@@ -132,8 +131,6 @@ type srl struct {
 	// to generate certificates
 	cert         *cert.Cert
 	topologyName string
-	// SSH public keys extracted from the clab host
-	sshPubKeys []ssh.PublicKey
 	// software version SR Linux node runs
 	swVersion *SrlVersion
 }
@@ -234,9 +231,6 @@ func (s *srl) PreDeploy(_ context.Context, params *nodes.PreDeployParams) error 
 			}
 		}
 	}
-
-	// store provided pubkeys
-	s.sshPubKeys = params.SSHPubKeys
 
 	// store the certificate-related parameters
 	// for cert generation to happen in Post-Deploy phase with mgmt IPs as SANs
@@ -516,7 +510,6 @@ type srlTemplateData struct {
 	TLSAnchor  string
 	Banner     string
 	IFaces     map[string]tplIFace
-	SSHPubKeys string
 	MgmtMTU    int
 	MgmtIPMTU  int
 	DNSServers []string

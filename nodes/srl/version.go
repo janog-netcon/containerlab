@@ -160,12 +160,6 @@ func (n *srl) setVersionSpecificParams(tplData *srlTemplateData) {
 	// v is in the vMajor.Minor format
 	v := n.swVersion.MajorMinorSemverString()
 
-	// in srlinux >= v23.10+ linuxadmin and admin user ssh keys can only be configured via the cli
-	// so we add the keys to the template data for rendering.
-	if len(n.sshPubKeys) > 0 && (semver.Compare(v, "v23.10") >= 0 || n.swVersion.Major == "0") {
-		tplData.SSHPubKeys = catenateKeys(n.sshPubKeys)
-	}
-
 	// in srlinux >= v24.3+ we add ACL rules to enable http and telnet access
 	// that are useful for labs and were removed as a security hardening measure.
 	if semver.Compare(v, "v24.3") >= 0 || n.swVersion.Major == "0" {
